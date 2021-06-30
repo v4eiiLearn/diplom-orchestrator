@@ -1,0 +1,51 @@
+
+spring:
+  application:
+    name: orchestrator
+  datasource:
+    url: jdbc:postgresql://localhost:5432/diplom_orchestrator
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+camunda:
+  ldap:
+    activate: false
+    accept-untrusted-certificates: true
+    admin-user-name: Isaac Newton
+    admin-group: scientists
+    user-group: groups5
+    ldap-configuration:
+      server-url: ldaps://localhost:636 #ldap://localhost:10389
+      use-ssl: true
+      base-dn: dc=tuleap,dc=local #dc=wimpi,dc=net
+      security-authentication: simple
+      manager-dn: cn=Manager1,dc=tuleap,dc=local #uid=admin,ou=system
+      manager-password: 1
+      user-search-base: ""
+      user-search-filter: objectclass=inetOrgPerson
+      user-id-attribute: uid
+      user-firstname-attribute: cn
+      user-last-name-attribute: sn
+      user-email-attribute: mail
+      user-password-attribute: userPassword
+      group-search-base: ""
+      group-search-filter: objectclass=groupOfUniqueNames
+      group-id-attribute: ou
+      group-name-attribute: cn
+      group-member-attribute: uniqueMember
+  bpm:
+    deployment-resource-pattern: bp/*.bpmn
+service:
+  app:
+    base-url: http://localhost:8081
+  mock:
+    base-url: http://localhost:8079
+server:
+  port: 8080
+mdc-logging:
+  filtered-patterns:
+    - /camunda/**
+    - /engine-rest/external-task/**
+logging:
+  level:
+    ru.vgtu: debug

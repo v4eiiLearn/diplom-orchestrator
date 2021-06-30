@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: orchestrator
+  datasource:
+    url: ${POSTGRES_HOST}  #jdbc:postgresql://localhost:5432/diplom_orchestrator
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+camunda:
+  ldap:
+    activate: ${LDAP_ACTIVATE}
+    accept-untrusted-certificates: true
+    admin-user-name: ${LDAP_ADMIN_USER}
+    admin-group: ${LDAP_ADMIN_GROUP}
+    user-group: ${LDAP_USER_GROUP}
+    ldap-configuration:
+      server-url: ${LDAP_HOST} #ldaps://localhost:636 #ldap://localhost:10389
+      use-ssl: ${LDAP_USE_SSL}
+      base-dn: ${LDAP_BASE_DN} #dc=wimpi,dc=net #dc=tuleap,dc=local
+      security-authentication: simple
+      manager-dn: ${LDAP_MANAGER_DN} #cn=Manager,dc=tuleap,dc=local #uid=admin,ou=system
+      manager-password: ${LDAP_MANAGER_PASSWORD}
+      user-search-base: ""
+      user-search-filter: ${LDAP_SEARCH_FILTER} # objectclass=inetOrgPerson
+      user-id-attribute: ${LDAP_USER_ID_ATTRIBUTE}
+      user-firstname-attribute: ${LDAP_USER_FIRSTNAME}
+      user-last-name-attribute: ${LDAP_USER_LASTNAME}
+      user-email-attribute: ${LDAP_USER_EMAIL}
+      user-password-attribute: ${LDAP_PASSWORD_ATTRIBUTE}
+      group-search-base: ""
+      group-search-filter: ${LDAP_GROUP_FILTER} #objectclass=groupOfNames
+      group-id-attribute: ${LDAP_GROUP_ID_ATTRIBUTE}
+      group-name-attribute: ${LDAP_GROUP_NAME}
+      group-member-attribute: ${LDAP_GROUP_MEMBER}
+  bpm:
+    deployment-resource-pattern: bp/*.bpmn
+service:
+  app:
+    base-url: ${D_APP_HOST}
+  mock:
+    base-url: ${D_MOCK_HOST}
+mdc-logging:
+  filtered-patterns:
+    - /camunda/**
+    - /engine-rest/external-task/**
+server:
+  port: ${TOMCAT_PORT}

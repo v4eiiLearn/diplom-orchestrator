@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1y42is8" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="4.4.0">
+  <bpmn:collaboration id="Collaboration_133btsi">
+    <bpmn:participant id="Participant_19826e8" name="Создание заявки" processRef="initiateProcess" />
+  </bpmn:collaboration>
+  <bpmn:process id="initiateProcess" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_1urgh9r</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="get-client-info" name="Сохранение начальной информации о клиенте" camunda:delegateExpression="${clientInfoExecutor}">
+      <bpmn:incoming>Flow_021siet</bpmn:incoming>
+      <bpmn:outgoing>Flow_09q0bu0</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="get-client-incomes" name="Получение данных и доходов клиента" camunda:delegateExpression="${clientProfileExecutor}">
+      <bpmn:incoming>Flow_09q0bu0</bpmn:incoming>
+      <bpmn:outgoing>Flow_0qfupkk</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="Gateway_1k1e9is" name="Отклонить заявку?">
+      <bpmn:incoming>Flow_1y2mdii</bpmn:incoming>
+      <bpmn:outgoing>Flow_021siet</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1hvl797</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="Activity_1xo8jqj" name="Проверка кода продукта" camunda:expression="${clientInfo.productCode != &#34;AUTO&#34;}" camunda:resultVariable="isReject">
+      <bpmn:incoming>Flow_1urgh9r</bpmn:incoming>
+      <bpmn:outgoing>Flow_1y2mdii</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_0gxfr8h" name="Нотификация об отказе" camunda:delegateExpression="${notificationExecutor}">
+      <bpmn:incoming>Flow_1hvl797</bpmn:incoming>
+      <bpmn:outgoing>Flow_04vnspj</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_04vnspj" sourceRef="Activity_0gxfr8h" targetRef="Event_1l1rfvt" />
+    <bpmn:sequenceFlow id="Flow_1y2mdii" sourceRef="Activity_1xo8jqj" targetRef="Gateway_1k1e9is" />
+    <bpmn:sequenceFlow id="Flow_1hvl797" name="Да" sourceRef="Gateway_1k1e9is" targetRef="Activity_0gxfr8h">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${isReject}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_021siet" name="Нет" sourceRef="Gateway_1k1e9is" targetRef="get-client-info">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${!isReject}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0qfupkk" sourceRef="get-client-incomes" targetRef="Activity_17c0vx6" />
+    <bpmn:sequenceFlow id="Flow_09q0bu0" sourceRef="get-client-info" targetRef="get-client-incomes" />
+    <bpmn:sequenceFlow id="Flow_1urgh9r" sourceRef="StartEvent_1" targetRef="Activity_1xo8jqj" />
+    <bpmn:sequenceFlow id="Flow_0fu9dku" sourceRef="Activity_17c0vx6" targetRef="Activity_1jdthdq" />
+    <bpmn:endEvent id="Event_0ewwj94">
+      <bpmn:incoming>Flow_1n299dk</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_15eg22r" sourceRef="Activity_1jdthdq" targetRef="Activity_0nm2yga" />
+    <bpmn:sequenceFlow id="Flow_1n299dk" sourceRef="Activity_0nm2yga" targetRef="Event_0ewwj94" />
+    <bpmn:serviceTask id="Activity_1jdthdq" name="Нотификация клиента" camunda:asyncBefore="true" camunda:delegateExpression="${notificationExecutor}">
+      <bpmn:extensionElements>
+        <camunda:failedJobRetryTimeCycle>R3/PT15S</camunda:failedJobRetryTimeCycle>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0fu9dku</bpmn:incoming>
+      <bpmn:outgoing>Flow_15eg22r</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_0nm2yga" name="Смена статуса заявки" camunda:expression="${applicationService.updateStatus(execution.processBusinessKey, decision)}">
+      <bpmn:incoming>Flow_15eg22r</bpmn:incoming>
+      <bpmn:outgoing>Flow_1n299dk</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:callActivity id="Activity_17c0vx6" name="Запуск процесса решения" calledElement="decisionProcess">
+      <bpmn:extensionElements>
+        <camunda:in businessKey="${applicationId}" />
+        <camunda:executionListener delegateExpression="${startDecisionProcessListener}" event="start" />
+        <camunda:out sourceExpression="${decision}" target="decision" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0qfupkk</bpmn:incoming>
+      <bpmn:outgoing>Flow_0fu9dku</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="Event_1l1rfvt">
+      <bpmn:incoming>Flow_04vnspj</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_133btsi">
+      <bpmndi:BPMNShape id="Participant_19826e8_di" bpmnElement="Participant_19826e8" isHorizontal="true">
+        <dc:Bounds x="160" y="54" width="1348" height="270" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0fu9dku_di" bpmnElement="Flow_0fu9dku">
+        <di:waypoint x="990" y="117" />
+        <di:waypoint x="1040" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1urgh9r_di" bpmnElement="Flow_1urgh9r">
+        <di:waypoint x="248" y="117" />
+        <di:waypoint x="310" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09q0bu0_di" bpmnElement="Flow_09q0bu0">
+        <di:waypoint x="680" y="117" />
+        <di:waypoint x="740" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qfupkk_di" bpmnElement="Flow_0qfupkk">
+        <di:waypoint x="840" y="117" />
+        <di:waypoint x="890" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_021siet_di" bpmnElement="Flow_021siet">
+        <di:waypoint x="525" y="117" />
+        <di:waypoint x="580" y="117" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="543" y="99" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hvl797_di" bpmnElement="Flow_1hvl797">
+        <di:waypoint x="500" y="142" />
+        <di:waypoint x="500" y="260" />
+        <di:waypoint x="580" y="260" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="523" y="223" width="13" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1y2mdii_di" bpmnElement="Flow_1y2mdii">
+        <di:waypoint x="410" y="117" />
+        <di:waypoint x="475" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04vnspj_di" bpmnElement="Flow_04vnspj">
+        <di:waypoint x="680" y="260" />
+        <di:waypoint x="772" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15eg22r_di" bpmnElement="Flow_15eg22r">
+        <di:waypoint x="1140" y="117" />
+        <di:waypoint x="1200" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1n299dk_di" bpmnElement="Flow_1n299dk">
+        <di:waypoint x="1300" y="117" />
+        <di:waypoint x="1372" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="212" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0gt3mur_di" bpmnElement="get-client-info">
+        <dc:Bounds x="580" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_132mt2l_di" bpmnElement="get-client-incomes">
+        <dc:Bounds x="740" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1k1e9is_di" bpmnElement="Gateway_1k1e9is" isMarkerVisible="true">
+        <dc:Bounds x="475" y="92" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="473" y="62" width="55" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1xo8jqj_di" bpmnElement="Activity_1xo8jqj">
+        <dc:Bounds x="310" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1gvriae_di" bpmnElement="Activity_0gxfr8h">
+        <dc:Bounds x="580" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0ewwj94_di" bpmnElement="Event_0ewwj94">
+        <dc:Bounds x="1372" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1jdthdq_di" bpmnElement="Activity_1jdthdq">
+        <dc:Bounds x="1040" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0nm2yga_di" bpmnElement="Activity_0nm2yga">
+        <dc:Bounds x="1200" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1xsoi2f_di" bpmnElement="Activity_17c0vx6">
+        <dc:Bounds x="890" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1l1rfvt_di" bpmnElement="Event_1l1rfvt">
+        <dc:Bounds x="772" y="242" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
